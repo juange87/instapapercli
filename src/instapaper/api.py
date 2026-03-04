@@ -84,7 +84,12 @@ class InstapaperAPI:
         return [item for item in result if item.get("type") == "bookmark"]
 
     def add_bookmark(
-        self, url: str, title: str | None = None, folder_id: str | None = None
+        self,
+        url: str,
+        title: str | None = None,
+        folder_id: str | None = None,
+        content: str | None = None,
+        is_private_from_source: bool = False,
     ) -> dict:
         """Add a bookmark. Returns the bookmark dict."""
         params = {"url": url}
@@ -92,6 +97,10 @@ class InstapaperAPI:
             params["title"] = title
         if folder_id:
             params["folder_id"] = folder_id
+        if content:
+            params["content"] = content
+        if is_private_from_source:
+            params["is_private_from_source"] = "1"
         result = self._post("/api/1/bookmarks/add", **params)
         return [item for item in result if item.get("type") == "bookmark"][0]
 

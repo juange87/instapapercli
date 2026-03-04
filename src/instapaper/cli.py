@@ -13,7 +13,10 @@ from instapaper.config import (
     load_tokens,
     save_tokens,
 )
+from instapaper.converters import markdown_to_html, pdf_to_html
 from instapaper.epub import create_epub_from_bookmark
+
+FILE_EXTENSIONS = {".md", ".pdf"}
 
 
 def get_api() -> InstapaperAPI:
@@ -56,14 +59,34 @@ def login():
 
 
 @cli.command()
-@click.argument("url")
+@click.argument("target")
 @click.option("--title", "-t", default=None, help="Custom title for the bookmark.")
 @click.option("--folder", "-f", default=None, help="Folder ID to save to.")
-def add(url, title, folder):
-    """Add a URL to your Instapaper reading list."""
+def add(target, title, folder):
+    """Add a URL or local file (.md, .pdf) to your Instapaper reading list."""
     api = get_api()
-    bookmark = api.add_bookmark(url, title=title, folder_id=folder)
-    click.echo(f"Added: {bookmark.get('title', url)} (ID: {bookmark['bookmark_id']})")
+
+    file_path = Path(target)
+    content = None
+    is_private = False
+
+    if file_path.suffix.lower() in FILE_EXTENSIONS:
+        if not file_path.exists():
+            click.echo(f"File not found: {target}", err=True)
+            raise SystemExit(1)
+        if file_path.suffix.lower() == ".md":
+            content = markdown_to_html(file_path)
+        else:
+            content = pdf_to_html(file_path)
+        is_private = True
+        title = title or file_path.name
+        target = f"file://{file_path.name}"
+
+    bookmark = api.add_bookmark(
+        target, title=title, folder_id=folder, content=content,
+        is_private_from_source=is_private,
+    )
+    click.echo(f"Added: {bookmark.get('title', target)} (ID: {bookmark['bookmark_id']})")
 
 
 @cli.command("list")

@@ -117,6 +117,38 @@ def test_add_bookmark():
 
 
 @responses.activate
+def test_add_bookmark_with_content():
+    """add_bookmark with content should send content and is_private_from_source."""
+    from instapaper.api import InstapaperAPI
+
+    responses.add(
+        responses.POST,
+        "https://www.instapaper.com/api/1/bookmarks/add",
+        json=[
+            {"type": "bookmark", "bookmark_id": 4004, "title": "Uploaded File"}
+        ],
+        status=200,
+    )
+
+    api = InstapaperAPI(
+        consumer_key="ck",
+        consumer_secret="cs",
+        oauth_token="tok",
+        oauth_token_secret="sec",
+    )
+    bookmark = api.add_bookmark(
+        "https://instapaper.com/upload",
+        content="<p>File content here</p>",
+        is_private_from_source=True,
+    )
+    assert bookmark["bookmark_id"] == 4004
+    # Verify content was sent in the request body
+    body = responses.calls[-1].request.body.decode()
+    assert "content" in body
+    assert "is_private_from_source" in body
+
+
+@responses.activate
 def test_get_text():
     """get_text should return article HTML."""
     from instapaper.api import InstapaperAPI

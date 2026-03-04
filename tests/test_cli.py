@@ -95,6 +95,125 @@ def test_list_bookmarks(monkeypatch, tmp_path):
     assert "Article One" in result.output
 
 
+def test_add_markdown_file(monkeypatch, tmp_path):
+    """Add command should detect .md file, convert to HTML, and upload with content."""
+    from instapaper.cli import cli
+
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_KEY", "ck")
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_SECRET", "cs")
+    token_file = tmp_path / "tokens.json"
+    token_file.write_text(json.dumps({
+        "oauth_token": "tok", "oauth_token_secret": "sec"
+    }))
+    md_file = tmp_path / "notes.md"
+    md_file.write_text("# My Notes\n\nSome content here.")
+
+    with patch("instapaper.cli.TOKEN_FILE", token_file), \
+         patch("instapaper.cli.InstapaperAPI") as MockAPI:
+        mock_api = MockAPI.return_value
+        mock_api.add_bookmark.return_value = {
+            "type": "bookmark",
+            "bookmark_id": 5005,
+            "title": "notes.md",
+        }
+        runner = CliRunner()
+        result = runner.invoke(cli, ["add", str(md_file)])
+
+    assert result.exit_code == 0
+    assert "Added" in result.output
+    mock_api.add_bookmark.assert_called_once()
+    call_kwargs = mock_api.add_bookmark.call_args
+    assert call_kwargs.kwargs.get("content") is not None
+    assert "<h1>" in call_kwargs.kwargs["content"]
+    assert call_kwargs.kwargs.get("is_private_from_source") is True
+
+
+def test_add_pdf_file(monkeypatch, tmp_path):
+    """Add command should detect .pdf file, convert to HTML, and upload with content."""
+    import pymupdf
+
+    from instapaper.cli import cli
+
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_KEY", "ck")
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_SECRET", "cs")
+    token_file = tmp_path / "tokens.json"
+    token_file.write_text(json.dumps({
+        "oauth_token": "tok", "oauth_token_secret": "sec"
+    }))
+    pdf_file = tmp_path / "report.pdf"
+    doc = pymupdf.open()
+    page = doc.new_page()
+    page.insert_text((72, 72), "PDF report content")
+    doc.save(str(pdf_file))
+    doc.close()
+
+    with patch("instapaper.cli.TOKEN_FILE", token_file), \
+         patch("instapaper.cli.InstapaperAPI") as MockAPI:
+        mock_api = MockAPI.return_value
+        mock_api.add_bookmark.return_value = {
+            "type": "bookmark",
+            "bookmark_id": 6006,
+            "title": "report.pdf",
+        }
+        runner = CliRunner()
+        result = runner.invoke(cli, ["add", str(pdf_file)])
+
+    assert result.exit_code == 0
+    assert "Added" in result.output
+    call_kwargs = mock_api.add_bookmark.call_args
+    assert call_kwargs.kwargs.get("content") is not None
+    assert "PDF report content" in call_kwargs.kwargs["content"]
+    assert call_kwargs.kwargs.get("is_private_from_source") is True
+
+
+def test_add_url_unchanged(monkeypatch, tmp_path):
+    """Add command with a URL should still work as before (no content param)."""
+    from instapaper.cli import cli
+
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_KEY", "ck")
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_SECRET", "cs")
+    token_file = tmp_path / "tokens.json"
+    token_file.write_text(json.dumps({
+        "oauth_token": "tok", "oauth_token_secret": "sec"
+    }))
+
+    with patch("instapaper.cli.TOKEN_FILE", token_file), \
+         patch("instapaper.cli.InstapaperAPI") as MockAPI:
+        mock_api = MockAPI.return_value
+        mock_api.add_bookmark.return_value = {
+            "type": "bookmark",
+            "bookmark_id": 3003,
+            "title": "Example",
+            "url": "https://example.com",
+        }
+        runner = CliRunner()
+        result = runner.invoke(cli, ["add", "https://example.com"])
+
+    assert result.exit_code == 0
+    call_kwargs = mock_api.add_bookmark.call_args
+    assert call_kwargs.kwargs.get("content") is None
+    assert call_kwargs.kwargs.get("is_private_from_source") is False
+
+
+def test_add_missing_file(monkeypatch, tmp_path):
+    """Add command should fail gracefully for a non-existent file."""
+    from instapaper.cli import cli
+
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_KEY", "ck")
+    monkeypatch.setenv("INSTAPAPER_CONSUMER_SECRET", "cs")
+    token_file = tmp_path / "tokens.json"
+    token_file.write_text(json.dumps({
+        "oauth_token": "tok", "oauth_token_secret": "sec"
+    }))
+
+    with patch("instapaper.cli.TOKEN_FILE", token_file):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["add", "/nonexistent/file.md"])
+
+    assert result.exit_code != 0
+    assert "not found" in result.output.lower() or "not found" in (result.output + str(result.exception)).lower()
+
+
 def test_export_single(monkeypatch, tmp_path):
     """Export command should create an EPUB file."""
     from instapaper.cli import cli
