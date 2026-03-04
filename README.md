@@ -32,28 +32,26 @@ pip install -e ".[dev]"
 
 ## Setup
 
-### 1. Get API credentials
-
-Request OAuth consumer tokens from Instapaper:
-
-https://www.instapaper.com/main/request_oauth_consumer_token
-
-### 2. Set environment variables
-
-```bash
-export INSTAPAPER_CONSUMER_KEY="your_consumer_key"
-export INSTAPAPER_CONSUMER_SECRET="your_consumer_secret"
-```
-
-You can add these to your `~/.bashrc`, `~/.zshrc`, or use a tool like [direnv](https://direnv.net/).
-
-### 3. Log in
+### 1. Log in
 
 ```bash
 instapaper login
 ```
 
 This prompts for your Instapaper email and password, exchanges them for OAuth tokens via xAuth, and stores the tokens securely at `~/.config/instapaper/tokens.json`. You only need to do this once.
+
+API consumer credentials are bundled with the CLI, so no extra configuration is needed.
+
+### Using your own API credentials (optional)
+
+If you prefer to use your own OAuth consumer tokens, request them from Instapaper and set them as environment variables:
+
+```bash
+export INSTAPAPER_CONSUMER_KEY="your_consumer_key"
+export INSTAPAPER_CONSUMER_SECRET="your_consumer_secret"
+```
+
+Environment variables take priority over the built-in defaults.
 
 ## Usage
 

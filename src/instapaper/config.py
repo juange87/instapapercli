@@ -10,15 +10,18 @@ import click
 TOKEN_DIR = Path.home() / ".config" / "instapaper"
 TOKEN_FILE = TOKEN_DIR / "tokens.json"
 
+DEFAULT_CONSUMER_KEY = "88d5ce5b8bfd4279b895753f6974cc61"
+DEFAULT_CONSUMER_SECRET = "81736445da504585b797d709054c6f21"
+
 
 def get_consumer_credentials() -> tuple[str, str]:
-    """Read OAuth consumer key/secret from environment variables."""
-    key = os.environ.get("INSTAPAPER_CONSUMER_KEY")
-    secret = os.environ.get("INSTAPAPER_CONSUMER_SECRET")
-    if not key or not secret:
+    """Read OAuth consumer key/secret from env vars, falling back to built-in defaults."""
+    key = os.environ.get("INSTAPAPER_CONSUMER_KEY", DEFAULT_CONSUMER_KEY)
+    secret = os.environ.get("INSTAPAPER_CONSUMER_SECRET", DEFAULT_CONSUMER_SECRET)
+    if key == "YOUR_CONSUMER_KEY_HERE" or secret == "YOUR_CONSUMER_SECRET_HERE":
         click.echo(
             "Error: Set INSTAPAPER_CONSUMER_KEY and INSTAPAPER_CONSUMER_SECRET "
-            "environment variables.",
+            "environment variables, or update the defaults in config.py.",
             err=True,
         )
         sys.exit(1)
