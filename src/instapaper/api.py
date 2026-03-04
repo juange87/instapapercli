@@ -72,3 +72,50 @@ class InstapaperAPI:
         """Verify OAuth credentials, return user dict."""
         result = self._post("/api/1/account/verify_credentials")
         return result[0]
+
+    def list_bookmarks(
+        self, limit: int = 25, folder_id: str | None = None
+    ) -> list[dict]:
+        """List bookmarks. Returns only bookmark-type entries."""
+        params = {"limit": limit}
+        if folder_id:
+            params["folder_id"] = folder_id
+        result = self._post("/api/1/bookmarks/list", **params)
+        return [item for item in result if item.get("type") == "bookmark"]
+
+    def add_bookmark(
+        self, url: str, title: str | None = None, folder_id: str | None = None
+    ) -> dict:
+        """Add a bookmark. Returns the bookmark dict."""
+        params = {"url": url}
+        if title:
+            params["title"] = title
+        if folder_id:
+            params["folder_id"] = folder_id
+        result = self._post("/api/1/bookmarks/add", **params)
+        return [item for item in result if item.get("type") == "bookmark"][0]
+
+    def get_text(self, bookmark_id: int) -> str:
+        """Get processed HTML text of a bookmark."""
+        session = self._session()
+        resp = session.post(
+            f"{BASE_URL}/api/1/bookmarks/get_text",
+            data={"bookmark_id": bookmark_id},
+        )
+        if resp.status_code != 200:
+            raise InstapaperError(
+                f"Failed to get text for bookmark {bookmark_id} "
+                f"(HTTP {resp.status_code})"
+            )
+        return resp.text
+
+    def archive(self, bookmark_id: int) -> dict:
+        """Archive a bookmark."""
+        result = self._post(
+            "/api/1/bookmarks/archive", bookmark_id=bookmark_id
+        )
+        return [item for item in result if item.get("type") == "bookmark"][0]
+
+    def delete(self, bookmark_id: int) -> None:
+        """Permanently delete a bookmark."""
+        self._post("/api/1/bookmarks/delete", bookmark_id=bookmark_id)

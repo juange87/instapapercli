@@ -58,3 +58,104 @@ def test_verify_credentials():
     )
     user = api.verify_credentials()
     assert user["user_id"] == 123
+
+
+@responses.activate
+def test_list_bookmarks():
+    """list_bookmarks should return bookmark dicts."""
+    from instapaper.api import InstapaperAPI
+
+    responses.add(
+        responses.POST,
+        "https://www.instapaper.com/api/1/bookmarks/list",
+        json=[
+            {"type": "meta"},
+            {
+                "type": "bookmark",
+                "bookmark_id": 1001,
+                "title": "Test Article",
+                "url": "https://example.com/article",
+                "progress": 0.0,
+            },
+        ],
+        status=200,
+    )
+
+    api = InstapaperAPI(
+        consumer_key="ck",
+        consumer_secret="cs",
+        oauth_token="tok",
+        oauth_token_secret="sec",
+    )
+    bookmarks = api.list_bookmarks(limit=10)
+    assert len(bookmarks) == 1
+    assert bookmarks[0]["bookmark_id"] == 1001
+
+
+@responses.activate
+def test_add_bookmark():
+    """add_bookmark should return the created bookmark."""
+    from instapaper.api import InstapaperAPI
+
+    responses.add(
+        responses.POST,
+        "https://www.instapaper.com/api/1/bookmarks/add",
+        json=[
+            {"type": "bookmark", "bookmark_id": 2002, "title": "New Article", "url": "https://example.com/new"}
+        ],
+        status=200,
+    )
+
+    api = InstapaperAPI(
+        consumer_key="ck",
+        consumer_secret="cs",
+        oauth_token="tok",
+        oauth_token_secret="sec",
+    )
+    bookmark = api.add_bookmark("https://example.com/new")
+    assert bookmark["bookmark_id"] == 2002
+
+
+@responses.activate
+def test_get_text():
+    """get_text should return article HTML."""
+    from instapaper.api import InstapaperAPI
+
+    responses.add(
+        responses.POST,
+        "https://www.instapaper.com/api/1/bookmarks/get_text",
+        body="<p>Article content here</p>",
+        status=200,
+        content_type="text/html",
+    )
+
+    api = InstapaperAPI(
+        consumer_key="ck",
+        consumer_secret="cs",
+        oauth_token="tok",
+        oauth_token_secret="sec",
+    )
+    html = api.get_text(1001)
+    assert "Article content here" in html
+
+
+@responses.activate
+def test_archive_bookmark():
+    """archive should return the archived bookmark."""
+    from instapaper.api import InstapaperAPI
+
+    responses.add(
+        responses.POST,
+        "https://www.instapaper.com/api/1/bookmarks/archive",
+        json=[{"type": "bookmark", "bookmark_id": 1001}],
+        status=200,
+    )
+
+    api = InstapaperAPI(
+        consumer_key="ck",
+        consumer_secret="cs",
+        oauth_token="tok",
+        oauth_token_secret="sec",
+    )
+    result = api.archive(1001)
+    assert result["bookmark_id"] == 1001
