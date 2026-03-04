@@ -16,12 +16,29 @@ def test_get_consumer_credentials_from_env(monkeypatch):
     assert secret == "test_secret"
 
 
-def test_get_consumer_credentials_missing_raises(monkeypatch):
-    """Should raise if consumer credentials are not set."""
+def test_get_consumer_credentials_uses_defaults(monkeypatch):
+    """Should use built-in defaults when env vars are not set."""
+    from instapaper import config
     from instapaper.config import get_consumer_credentials
 
     monkeypatch.delenv("INSTAPAPER_CONSUMER_KEY", raising=False)
     monkeypatch.delenv("INSTAPAPER_CONSUMER_SECRET", raising=False)
+    monkeypatch.setattr(config, "DEFAULT_CONSUMER_KEY", "default_key")
+    monkeypatch.setattr(config, "DEFAULT_CONSUMER_SECRET", "default_secret")
+    key, secret = get_consumer_credentials()
+    assert key == "default_key"
+    assert secret == "default_secret"
+
+
+def test_get_consumer_credentials_missing_raises(monkeypatch):
+    """Should raise if no env vars and defaults are placeholders."""
+    from instapaper import config
+    from instapaper.config import get_consumer_credentials
+
+    monkeypatch.delenv("INSTAPAPER_CONSUMER_KEY", raising=False)
+    monkeypatch.delenv("INSTAPAPER_CONSUMER_SECRET", raising=False)
+    monkeypatch.setattr(config, "DEFAULT_CONSUMER_KEY", "YOUR_CONSUMER_KEY_HERE")
+    monkeypatch.setattr(config, "DEFAULT_CONSUMER_SECRET", "YOUR_CONSUMER_SECRET_HERE")
     with pytest.raises(SystemExit):
         get_consumer_credentials()
 
