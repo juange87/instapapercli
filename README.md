@@ -5,6 +5,7 @@ A command-line interface for [Instapaper](https://www.instapaper.com) that lets 
 ## Features
 
 - **Add articles** — Save any URL to your Instapaper account directly from the terminal
+- **Upload local files** — Add Markdown (`.md`) and PDF (`.pdf`) files directly from your filesystem
 - **List bookmarks** — Browse your reading list with a formatted table showing titles and reading progress
 - **Export to EPUB** — Download articles as EPUB files, ready for your Kobo or any e-reader
 - **Kobo integration** — Articles added via the CLI sync automatically to your Kobo over WiFi through Instapaper's native integration
@@ -75,6 +76,22 @@ instapaper add https://example.com/article --folder 12345
 ```
 
 If you have the Kobo-Instapaper integration enabled, added articles will sync to your Kobo automatically the next time it connects to WiFi.
+
+### Upload a local file
+
+Upload a Markdown file:
+
+```bash
+instapaper add ./notes.md
+```
+
+Upload a PDF:
+
+```bash
+instapaper add report.pdf
+```
+
+The CLI auto-detects `.md` and `.pdf` files, converts them to HTML, and uploads the content directly to Instapaper. The filename is used as the title by default (override with `--title`).
 
 ### List your bookmarks
 
@@ -147,7 +164,7 @@ instapaper --help
 | Command | Description |
 |---------|-------------|
 | `instapaper login` | Authenticate with Instapaper |
-| `instapaper add <url>` | Add a URL to your reading list |
+| `instapaper add <url or file>` | Add a URL or local file (.md, .pdf) to your reading list |
 | `instapaper list` | List saved bookmarks |
 | `instapaper export [ID]` | Export article(s) as EPUB |
 
@@ -207,12 +224,14 @@ instapapercli/
 │       ├── __init__.py
 │       ├── cli.py              # Click commands (login, add, list, export)
 │       ├── api.py              # OAuth 1.0a API client
+│       ├── converters.py        # Markdown/PDF → HTML conversion
 │       ├── epub.py             # HTML → EPUB conversion
 │       └── config.py           # Credential management
 └── tests/
-    ├── test_api.py             # API client tests (7 tests)
-    ├── test_cli.py             # CLI command tests (5 tests)
+    ├── test_api.py             # API client tests (8 tests)
+    ├── test_cli.py             # CLI command tests (9 tests)
     ├── test_config.py          # Config module tests (4 tests)
+    ├── test_converters.py      # File converter tests (4 tests)
     └── test_epub.py            # EPUB export tests (3 tests)
 ```
 
@@ -243,7 +262,7 @@ The export pipeline:
 pytest tests/ -v
 ```
 
-All 19 tests use mocked HTTP responses (via the `responses` library), so no Instapaper account or network connection is needed to run the test suite.
+All 28 tests use mocked HTTP responses (via the `responses` library), so no Instapaper account or network connection is needed to run the test suite.
 
 ## Dependencies
 
@@ -255,6 +274,8 @@ All 19 tests use mocked HTTP responses (via the `responses` library), so no Inst
 | [ebooklib](https://github.com/aerkalov/ebooklib) | EPUB file generation |
 | [beautifulsoup4](https://www.crummy.com/software/BeautifulSoup/) | HTML parsing and cleanup |
 | [rich](https://rich.readthedocs.io/) | Formatted terminal tables |
+| [markdown](https://python-markdown.github.io/) | Markdown to HTML conversion |
+| [pymupdf](https://pymupdf.readthedocs.io/) | PDF text extraction |
 
 ## License
 
